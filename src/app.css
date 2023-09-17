@@ -1,0 +1,70 @@
+:root {
+  --fntFamily: "BM Plex Mono", monospace;
+  --fntBaseSize: 14px;
+}
+
+* { box-sizing: border-box; scrollbar-color: #333 #202020; }
+::-webkit-scrollbar { background-color: #202020; width: 8px; }
+::-webkit-scrollbar-thumb { background-color: #333; }
+
+html, body {
+  height: 100%; width: 100%; margin: 0; padding: 0;
+}
+html { background-color: black; padding: 32px; }
+body {
+  font-family: var(--fntFamily); font-size: var(--fntBaseSize);
+  color: #ccc;
+}
+
+.top-ctrl {
+  position: fixed; top: 32px; right: 32px; left: 32px; height: 32px;
+  background-color: #202020;
+}
+.csound-log {
+  position: fixed; top: 96px; right: 32px; bottom: 32px;
+  width: calc(40% - 32px - 16px); padding: 8px;
+  white-space: pre; overflow-x: auto;
+  background-color: #202020; color: #888;
+  color: #8d8b76;
+  & .error { color: #b63939; }
+}
+
+.editor {
+  position: fixed; top: 96px; right: 32px; left: 32px; bottom: 32px;
+  width: calc(60% - 32px);
+  & #editorHost { height: 100%; }
+}
+
+/* Editor styling */
+.cm-editor {
+  height: 100%; background-color: #202020;
+  & .cm-scroller { font-family: var(--fntFamily); }
+  & .cm-gutters { background-color: transparent; border: none; }
+  & .cm-activeLineGutter { background-color: #303030; }
+  & .cm-content { background-color: transparent; }
+  & .cm-activeLine { background-color: #ffffff10; }
+  & .cm-cursor { border-left: 1px solid #aaa; border-right: 1px solid #aaa; }
+  & .cm-selectionMatch { background-color: unset; }
+  & .cm-panels { background-color: transparent; }
+  & .cm-panels.cm-panels-bottom {
+    border-top: 2px solid #444; padding: 3px; height: 24px;
+  }
+}
+
+.cm-editor, .cm-editor.cm-focused {
+  & .cm-scroller .cm-selectionLayer .cm-selectionBackground { background-color: #90909044; }
+}
+
+/* CSOUND syntax styling */
+.cm-csound-global-var {font-weight: 600;}
+.cm-csound-define {color: #d9cfae; font-weight: 600;}
+.cm-csound-i-rate-var {color: #29A8FF;}
+.cm-csound-opcode {color: #82b9f3; font-weight: 600;}
+.cm-csound-global-constant {color: #b689de;}
+.cm-csound-a-rate-var {color: #da7e84;}
+.cm-csound-k-rate-var {color: #6C82AB;}
+.cm-csound-s-rate-var {color: #a11;}
+.cm-csound-f-rate-var {color: #004761;}
+.cm-csound-p-field-var {color: #FF9D0C; font-weight: 600;}
+.cm-csound-xml-tag {color: #698d72;}
+.cm-csound-comment {color: #7bc284; }

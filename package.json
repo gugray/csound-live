@@ -1,0 +1,20 @@
+{
+  "name": "csound-live",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "A live coding environment for CSOUND",
+  "license": "MIT",
+  "author": {
+    "name": "Gábor L Ugray",
+    "email": "gabor.reads.this@gmail.com"
+  },
+  "dependencies": {
+    "@csound/browser": "^6.18.7",
+    "@hlolli/codemirror-lang-csound": "^1.0.0-alpha9",
+    "codemirror": "^6.0.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.19.3",
+    "@jgoz/esbuild-plugin-livereload": "^2.0.3"
+  }
+}
