@@ -1,68 +1,131 @@
 import { EditorView, basicSetup } from "codemirror";
+import { keymap } from "@codemirror/view";
 import { csoundMode } from "@hlolli/codemirror-lang-csound";
 import { Csound } from "@csound/browser";
 
 const clog = console.log;
 console.log = onLog;
 
-const triggerEvent = "ontouchstart" in document.documentElement ? "touchend" : "click";
+// eat tab, shift-tab
+// tweak auto-ident?
+// re-eval only instrument / line; also flash?
+// save code on each (successful) eval
+// steal+adapt clock from steven yi
+
 const elmCsoundLog = document.querySelector(".csound-log");
-let modifiedCode = initialCode;
+const elmBtnPlayPause = document.getElementById("btnPlayPause");
+const elmEditorHost = document.getElementById("editorHost");
+let editor;
+let currentUserCode = initialUserCode;
 let csoundInstance;
 
-const initialCode = `<CsoundSynthesizer>
+const orcDefines = `
+sr = 48000
+ksmps = 64 // sr/kr
+nchnls = 2
+0dbfs = 1
+`;
+
+const codeTemplate = `
+<CsoundSynthesizer>
 <CsOptions>
--odac
+-odac -m0
 </CsOptions>
 <CsInstruments>
-instr 1
- aSin  poscil  0dbfs/4, 440
-       out     aSin
-endin
+{{orc-defines}}
+{{instruments}}
 </CsInstruments>
 <CsScore>
-i 1 0 1
 </CsScore>
 </CsoundSynthesizer>`;
 
-const onChange = (event) => {
-  modifiedCode = event.state.doc.toString();
-};
+const initialUserCode = `gisine ftgen 1, 0, 1024, 10, 1
 
-const editor = new EditorView({
+instr 1
+ aSin  poscil  0.25, 440
+       out     aSin
+endin
+
+event_i "i", 1, 0, 1
+`;
+
+function getFullCode(userCode) {
+  let res = codeTemplate;
+  res = res.replace("{{orc-defines}}", orcDefines);
+  res = res.replace("{{instruments}}", userCode);
+  return res;
+}
+
+function onChange(event) {
+  currentUserCode = event.state.doc.toString();
+}
+
+const customKeymap = keymap.of([
+  {
+    key: "Cmd-Enter",
+    run: async () => { await evalChanges(); return true; },
+  },
+]);
+
+editor = new EditorView({
   extensions: [
+    customKeymap,
     basicSetup,
-    csoundMode(),
+    csoundMode({ fileType: "orc" }),
     EditorView.updateListener.of(onChange)
   ],
-  parent: document.getElementById("editorHost")
+  parent: elmEditorHost,
+
 });
 
 editor.dispatch({
-  changes: { from: 0, to: editor.state.doc.length, insert: initialCode }
+  changes: { from: 0, to: editor.state.doc.length, insert: initialUserCode }
 });
 
-document
-  .querySelector("#btnPlayPause")
-  .addEventListener(triggerEvent, async function () {
-    // Playing
-    if (csoundInstance) {
-      await csoundInstance.stop();
-      csoundInstance = undefined;
-      return;
-    }
-    // Not playing
-    csoundInstance = await Csound();
-    const compileResult = await csoundInstance.compileCsdText(modifiedCode);
-    if (compileResult != 0) {
-      csoundInstance = undefined;
-      return;
-    }
-    csoundInstance.removeAllListeners("message");
-    csoundInstance.addListener("message", msg => onMessage(msg, false));
-    await csoundInstance.once("stop", () => csoundInstance = undefined );
-    await csoundInstance.start();
-  });
+setTimeout(() => {
+  editor.focus();
+}, 200);
+
+elmEditorHost.addEventListener("click", () => editor.focus());
+
+document.body.addEventListener("keydown", async e => {
+  if (e.key == "Escape" && csoundInstance) {
+    await stopCsound();
+    e.preventDefault();
+    return false;
+  }
+});
+
+async function stopCsound() {
+  await csoundInstance.stop();
+  elmBtnPlayPause.classList.remove("on");
+  csoundInstance = undefined;
+}
+
+async function startCsound() {
+  elmBtnPlayPause.classList.add("on");
+  csoundInstance = await Csound();
+  const compileResult = await csoundInstance.compileCsdText(getFullCode(currentUserCode));
+  if (compileResult != 0) {
+    csoundInstance = undefined;
+    return;
+  }
+  csoundInstance.removeAllListeners("message");
+  csoundInstance.addListener("message", msg => onMessage(msg, false));
+  await csoundInstance.once("stop", () => csoundInstance = undefined );
+  await csoundInstance.start();
+}
+
+async function evalChanges() {
+  if (!csoundInstance) return;
+  const x = await csoundInstance.evalCode(currentUserCode);
+}
+
+elmBtnPlayPause.addEventListener("click", async function () {
+  if (!csoundInstance) await startCsound();
+  else await stopCsound();
+  editor.focus();
+});
 
 function onLog(msg) {
   const tr = (new Error()).stack;

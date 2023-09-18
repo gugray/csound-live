@@ -17,21 +17,31 @@ body {
 }
 
 .top-ctrl {
-  position: fixed; top: 32px; right: 32px; left: 32px; height: 32px;
+  position: fixed; top: 32px; right: 32px; left: 32px; height: 48px;
   background-color: #202020;
+  & button {
+    display: inline-block; margin: 4px; padding: 2px 0 0 0; width: 40px; height: 40px;
+    border: 2px solid #666; border-radius: 24px;
+    background-color: #202020;
+    &:hover { background-color: #383838; }
+    & svg { width: 32px; height: 32px; }
+    & svg * { stroke: #666; }
+    &.on svg * { stroke: #ef9336; }
+  }
 }
 .csound-log {
   position: fixed; top: 96px; right: 32px; bottom: 32px;
-  width: calc(40% - 32px - 16px); padding: 8px;
+  width: calc(50% - 32px - 16px); padding: 8px;
   white-space: pre; overflow-x: auto;
   background-color: #202020; color: #888;
+  font-size: 15px;
   color: #8d8b76;
   & .error { color: #b63939; }
 }
 
 .editor {
   position: fixed; top: 96px; right: 32px; left: 32px; bottom: 32px;
-  width: calc(60% - 32px);
+  width: calc(50% - 32px);
   & #editorHost { height: 100%; }
 }
 
@@ -49,7 +59,9 @@ body {
   & .cm-panels.cm-panels-bottom {
     border-top: 2px solid #444; padding: 3px; height: 24px;
   }
+  & .cm-panels p { color: #ccc; }
 }
+#editorHost .cm-panels p { color: #ccc; }
 
 .cm-editor, .cm-editor.cm-focused {
   & .cm-scroller .cm-selectionLayer .cm-selectionBackground { background-color: #90909044; }
@@ -58,13 +70,13 @@ body {
 /* CSOUND syntax styling */
 .cm-csound-global-var {font-weight: 600;}
 .cm-csound-define {color: #d9cfae; font-weight: 600;}
-.cm-csound-i-rate-var {color: #29A8FF;}
+.cm-csound-i-rate-var {color: #b1cca8;}
 .cm-csound-opcode {color: #82b9f3; font-weight: 600;}
 .cm-csound-global-constant {color: #b689de;}
-.cm-csound-a-rate-var {color: #da7e84;}
-.cm-csound-k-rate-var {color: #6C82AB;}
-.cm-csound-s-rate-var {color: #a11;}
-.cm-csound-f-rate-var {color: #004761;}
-.cm-csound-p-field-var {color: #FF9D0C; font-weight: 600;}
+.cm-csound-a-rate-var {color: #ad7082;}
+.cm-csound-k-rate-var {color: #d3a591;}
+.cm-csound-s-rate-var {color: #ce9d83;}
+.cm-csound-f-rate-var {color: #a0bfcb;}
+.cm-csound-p-field-var {color: #a9c0a3; font-weight: 600;}
 .cm-csound-xml-tag {color: #698d72;}
-.cm-csound-comment {color: #7bc284; }
+.cm-csound-comment {color: #979897; }

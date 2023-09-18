@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>live ~ csound</title>
+  <title>csound ~ live</title>
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,12 +14,23 @@
 <body>
 
 <div class="top-ctrl">
-  <button id="btnPlayPause">Play/pause</button>
+  <button id="btnPlayPause">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+      <polyline points="24 128 56 128 96 40 160 208 200 128 232 128" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="16"/>
+    </svg>
+  </button>
 </div>
 <div class="editor">
   <div id="editorHost"></div>
 </div>
-<div class="csound-log">beep  biip</div>
+<div class="csound-log">♪ Welcome to csound-live
+========================
+
+Click on the signal icon to start Csound
+Edit the orchestra and press Ctrl+Enter to update
+Esc kills audio at any time
+Make some noise!
+</div>
 
 </body>
 </html>
