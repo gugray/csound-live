@@ -3,13 +3,14 @@ import { livereloadPlugin } from "@jgoz/esbuild-plugin-livereload";
 
 async function watch() {
   const context = await esbuild.context({
-    entryPoints: ["src/index.html", "src/app.css", "src/app.js"],
+    entryPoints: ["src/index.html", "src/app.css", "src/app.js", "src/samples/*"],
     outdir: "public",
     bundle: true,
     sourcemap: true,
     loader: {
       ".html": "copy",
       ".css": "copy",
+      ".aiff": "copy",
     },
     write: true,
     metafile: true,

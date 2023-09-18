@@ -1,5 +1,6 @@
 import { EditorView, basicSetup } from "codemirror";
 import { flashPlugin, flash, getCommitRange } from "./editor_customization.js";
+import { indentWithTab } from "@codemirror/commands"
 import { keymap } from "@codemirror/view";
 import { csoundMode } from "@hlolli/codemirror-lang-csound";
 import { Csound } from "@csound/browser";
@@ -7,8 +8,8 @@ import { Csound } from "@csound/browser";
 const clog = console.log;
 console.log = onLog;
 
-// -- eat tab, shift-tab
-// -- tweak auto-ident?
+// OK eat tab, shift-tab
+// XX tweak auto-ident?
 // OK re-eval only instrument / line; also flash?
 // -- save code on each (successful) eval
 // -- steal+adapt clock from steven yi or sungmin
@@ -19,6 +20,10 @@ const elmEditorHost = document.getElementById("editorHost");
 let editor;
 let currentUserCode = initialUserCode;
 let csoundInstance;
+
+const samples = [
+  // ["./samples/kick1.aiff", "kick1.aiff"],
+];
 
 const orcDefines = `
 sr = 48000
@@ -71,6 +76,7 @@ editor = new EditorView({
   extensions: [
     customKeymap,
     basicSetup,
+    keymap.of([indentWithTab]),
     csoundMode({ fileType: "orc" }),
     flashPlugin,
     EditorView.updateListener.of(onChange)
@@ -103,14 +109,29 @@ async function stopCsound() {
   csoundInstance = undefined;
 }
 
+async function loadAsset(fileURL, fileName) {
+  const response = await fetch(fileURL);
+  const abuf = await response.arrayBuffer();
+  await csoundInstance.fs.writeFile(fileName, new Uint8Array(abuf));
+};
+
 async function startCsound() {
+
   elmBtnPlayPause.classList.add("on");
   csoundInstance = await Csound();
+
+  // Load assets
+  for (const sample of samples)
+    await loadAsset(sample[0], sample[1]);
+
+  // Compile full initial code
   const compileResult = await csoundInstance.compileCsdText(getFullCode(currentUserCode));
   if (compileResult != 0) {
     csoundInstance = undefined;
     return;
   }
+
+  // Tweaks
   csoundInstance.removeAllListeners("message");
   csoundInstance.addListener("message", msg => onMessage(msg, false));
   await csoundInstance.once("stop", () => csoundInstance = undefined );
