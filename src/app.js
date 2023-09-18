@@ -1,4 +1,5 @@
 import { EditorView, basicSetup } from "codemirror";
+import { flashPlugin, flash, getCommitRange } from "./editor_customization.js";
 import { keymap } from "@codemirror/view";
 import { csoundMode } from "@hlolli/codemirror-lang-csound";
 import { Csound } from "@csound/browser";
@@ -6,11 +7,11 @@ import { Csound } from "@csound/browser";
 const clog = console.log;
 console.log = onLog;
 
-// eat tab, shift-tab
-// tweak auto-ident?
-// re-eval only instrument / line; also flash?
-// save code on each (successful) eval
-// steal+adapt clock from steven yi
+// -- eat tab, shift-tab
+// -- tweak auto-ident?
+// OK re-eval only instrument / line; also flash?
+// -- save code on each (successful) eval
+// -- steal+adapt clock from steven yi or sungmin
 
 const elmCsoundLog = document.querySelector(".csound-log");
 const elmBtnPlayPause = document.getElementById("btnPlayPause");
@@ -63,15 +64,15 @@ function onChange(event) {
 const customKeymap = keymap.of([
   {
     key: "Cmd-Enter",
-    run: async () => { await evalChanges(); return true; },
+    run: evalChange,
   },
 ]);
-
 editor = new EditorView({
   extensions: [
     customKeymap,
     basicSetup,
     csoundMode({ fileType: "orc" }),
+    flashPlugin,
     EditorView.updateListener.of(onChange)
   ],
   parent: elmEditorHost,
@@ -116,9 +117,14 @@ async function startCsound() {
   await csoundInstance.start();
 }
 
-async function evalChanges() {
+async function evalChange() {
   if (!csoundInstance) return;
-  const x = await csoundInstance.evalCode(currentUserCode);
+  let commitRange = getCommitRange(editor);
+  let compileRes = await csoundInstance.compileOrc(commitRange.text);
+  if (compileRes == 0) flash(editor, commitRange, "cm-highlight-good");
+  else flash(editor, commitRange, "cm-highlight-bad");
+  // await csoundInstance.evalCode(currentUserCode);
+  return true;
 }
 
 elmBtnPlayPause.addEventListener("click", async function () {

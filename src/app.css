@@ -60,6 +60,8 @@ body {
     border-top: 2px solid #444; padding: 3px; height: 24px;
   }
   & .cm-panels p { color: #ccc; }
+  & .cm-highlight-bad { background: rgba(255, 128, 128, 0.3); }
+  & .cm-highlight-good { background: rgba(128, 255, 128, 0.3); }
 }
 #editorHost .cm-panels p { color: #ccc; }
 
@@ -71,11 +73,11 @@ body {
 .cm-csound-global-var {font-weight: 600;}
 .cm-csound-define {color: #d9cfae; font-weight: 600;}
 .cm-csound-i-rate-var {color: #b1cca8;}
-.cm-csound-opcode {color: #82b9f3; font-weight: 600;}
-.cm-csound-global-constant {color: #b689de;}
-.cm-csound-a-rate-var {color: #ad7082;}
+.cm-csound-opcode {color: #8bb3e0; font-weight: 600;}
+.cm-csound-global-constant {color: #b1cca8;}
+.cm-csound-a-rate-var {color: #cc8397;}
 .cm-csound-k-rate-var {color: #d3a591;}
-.cm-csound-s-rate-var {color: #ce9d83;}
+.cm-csound-s-rate-var {color: #b1cca8;}
 .cm-csound-f-rate-var {color: #a0bfcb;}
 .cm-csound-p-field-var {color: #a9c0a3; font-weight: 600;}
 .cm-csound-xml-tag {color: #698d72;}
