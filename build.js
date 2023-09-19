@@ -39,8 +39,10 @@ const cacheBusterPlugin = {
 
 
 async function build() {
+  const entryPoints = ["src/index.html", "src/app.css", "src/app.js"];
+  if (fs.existsSync("src/samples")) entryPoints.push("src/samples/*");
   const context = await esbuild.context({
-    entryPoints: ["src/index.html", "src/app.css", "src/app.js", "src/samples/*"],
+    entryPoints: entryPoints,
     outdir: "public",
     bundle: true,
     sourcemap: true,
