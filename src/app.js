@@ -1,3 +1,4 @@
+import verstr from "./version.txt";
 import { EditorView, basicSetup } from "codemirror";
 import { flashPlugin, flash, getCommitRange } from "./editor_customization.js";
 import { indentWithTab } from "@codemirror/commands"
@@ -23,6 +24,7 @@ console.log = onLog;
 // -- spectrum analysis inset
 
 
+const elmVersion = document.getElementById("version");
 const elmCsoundLog = document.querySelector(".csound-log");
 const elmBtnPlayPause = document.getElementById("btnPlayPause");
 const elmEditorHost = document.getElementById("editorHost");
@@ -33,6 +35,8 @@ let cs; // Csound instance
 const samples = [
   // ["./samples/kick1.aiff", "kick1.aiff"],
 ];
+
+elmVersion.innerText = verstr;
 
 function getFullCode(userCode) {
   let res = csdTemplate;
