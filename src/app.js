@@ -156,8 +156,6 @@ document.addEventListener("mousemove", async e => {
   let [x, y] = [e.clientX, e.clientY];
   x /= w;
   y /= h;
-  const codeX = `gkMouseX init ${x}`;
-  const codeY = `gkMouseY init ${y}`;
-  await cs.compileOrc(codeX);
-  await cs.compileOrc(codeY);
+  const scoreEvent = `i999 0 0.01 ${x} ${y}`;
+  await cs.inputMessage(scoreEvent);
 });

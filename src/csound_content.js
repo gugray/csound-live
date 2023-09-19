@@ -20,6 +20,11 @@ nchnls = 2
 
 gkMouseX init 0
 gkMouseY init 0
+
+instr 999
+  gkMouseX = p4
+  gkMouseY = p5
+endin
 `;
 
 
@@ -57,7 +62,7 @@ endin
 /*
 
 gisine ftgen 1, 0, 4096, 10, 1
-gkAmp init 0.1
+gkAmp init 0.15
 giCarrierFreqMin = 200
 giCarrierFreqMax = 5000
 giModFreqMin = 1
@@ -86,7 +91,7 @@ instr 1
     kModAmp random 20, 10000
   endif
 
-  printks "CarrierFreq: %f  ModFreq: %f  ModAmp: %f\n", 0.5, kCarrierFreq, kModFreq, kModAmp
+  printks "CF: %f  MF: %f  MA: %f\n", 0.5, kCarrierFreq, kModFreq, kModAmp
 
   aMod poscil kModAmp, kModFreq
   aCarr poscil gkAmp, kCarrierFreq + aMod
