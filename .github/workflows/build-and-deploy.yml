@@ -35,14 +35,14 @@ jobs:
       working-directory: ./public
       run: zip -r ../csound-live-public.zip .
       
-    # - name: SCP file
-    #   uses: appleboy/scp-action@master
-    #   with:
-    #     host: ${{ secrets.SCP_HOST }}
-    #     username: ${{ secrets.SCP_USER }}
-    #     key: ${{ secrets.SCP_KEY }}
-    #     source: "chirpy-rx-public.zip"
-    #     target: "."
+    - name: SCP file
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.SCP_HOST }}
+        username: ${{ secrets.SCP_USER }}
+        key: ${{ secrets.SCP_KEY }}
+        source: "csound-live-public.zip"
+        target: "."
 
     # - name: Invoke deployment hook
     #   uses: distributhor/workflow-webhook@v1
