@@ -18,6 +18,8 @@ console.log = onLog;
 // OK inject mouse coords without re-parsing (OOM)
 // OK cache bustig on includes
 // OK build pipeline
+// -- fix caching in nginx
+// -- do not add livereload in prod
 // -- save, download, rename
 // -- saved patches list
 // -- structure app :)

@@ -41,6 +41,8 @@ const cacheBusterPlugin = {
 async function build() {
   const entryPoints = ["src/index.html", "src/app.css", "src/app.js"];
   if (fs.existsSync("src/samples")) entryPoints.push("src/samples/*");
+  const plugins = [cacheBusterPlugin];
+  if (args.watch) plugins.push(livereloadPlugin());
   const context = await esbuild.context({
     entryPoints: entryPoints,
     outdir: "public",
@@ -53,10 +55,7 @@ async function build() {
     },
     write: true,
     metafile: true,
-    plugins: [
-      livereloadPlugin(),
-      cacheBusterPlugin,
-    ],
+    plugins: plugins,
   });
 
   if (args.watch) {
