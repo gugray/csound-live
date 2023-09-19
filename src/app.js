@@ -4,6 +4,7 @@ import { indentWithTab } from "@codemirror/commands"
 import { keymap } from "@codemirror/view";
 import { csoundMode } from "@hlolli/codemirror-lang-csound";
 import { Csound } from "@csound/browser";
+import { initialUserCode, orcDefines, csdTemplate } from "./csound_content.js";
 
 const clog = console.log;
 console.log = onLog;
@@ -11,52 +12,30 @@ console.log = onLog;
 // OK eat tab, shift-tab
 // XX tweak auto-ident?
 // OK re-eval only instrument / line; also flash?
-// -- save code on each (successful) eval
-// -- steal+adapt clock from steven yi or sungmin
+// OK steal+adapt clock from steven yi or sungmin
+// OK inject (normalized) mouse X and Y
+// -- inject mouse coords without re-parsing (OOM)
+// -- save, download, rename
+// -- saved patches list
+// -- structure app :)
+// -- build pipeline
+// -- spectrum analysis inset
+// -- catch csound-generated midi events in JS
+
 
 const elmCsoundLog = document.querySelector(".csound-log");
 const elmBtnPlayPause = document.getElementById("btnPlayPause");
 const elmEditorHost = document.getElementById("editorHost");
 let editor;
 let currentUserCode = initialUserCode;
-let csoundInstance;
+let cs; // Csound instance
 
 const samples = [
   // ["./samples/kick1.aiff", "kick1.aiff"],
 ];
 
-const orcDefines = `
-sr = 48000
-ksmps = 64 // sr/kr
-nchnls = 2
-0dbfs = 1
-`;
-
-const codeTemplate = `
-<CsoundSynthesizer>
-<CsOptions>
--odac -m0
-</CsOptions>
-<CsInstruments>
-{{orc-defines}}
-{{instruments}}
-</CsInstruments>
-<CsScore>
-</CsScore>
-</CsoundSynthesizer>`;
-
-const initialUserCode = `gisine ftgen 1, 0, 1024, 10, 1
-
-instr 1
- aSin  poscil  0.25, 440
-       out     aSin
-endin
-
-event_i "i", 1, 0, 1
-`;
-
 function getFullCode(userCode) {
-  let res = codeTemplate;
+  let res = csdTemplate;
   res = res.replace("{{orc-defines}}", orcDefines);
   res = res.replace("{{instruments}}", userCode);
   return res;
@@ -72,6 +51,7 @@ const customKeymap = keymap.of([
     run: evalChange,
   },
 ]);
+
 editor = new EditorView({
   extensions: [
     customKeymap,
@@ -96,7 +76,7 @@ setTimeout(() => {
 elmEditorHost.addEventListener("click", () => editor.focus());
 
 document.body.addEventListener("keydown", async e => {
-  if (e.key == "Escape" && csoundInstance) {
+  if (e.key == "Escape" && cs) {
     await stopCsound();
     e.preventDefault();
     return false;
@@ -104,52 +84,52 @@ document.body.addEventListener("keydown", async e => {
 });
 
 async function stopCsound() {
-  await csoundInstance.stop();
+  await cs.stop();
   elmBtnPlayPause.classList.remove("on");
-  csoundInstance = undefined;
+  cs = undefined;
 }
 
 async function loadAsset(fileURL, fileName) {
   const response = await fetch(fileURL);
   const abuf = await response.arrayBuffer();
-  await csoundInstance.fs.writeFile(fileName, new Uint8Array(abuf));
+  await cs.fs.writeFile(fileName, new Uint8Array(abuf));
 };
 
 async function startCsound() {
 
   elmBtnPlayPause.classList.add("on");
-  csoundInstance = await Csound();
+  cs = await Csound();
 
   // Load assets
   for (const sample of samples)
     await loadAsset(sample[0], sample[1]);
 
   // Compile full initial code
-  const compileResult = await csoundInstance.compileCsdText(getFullCode(currentUserCode));
+  const compileResult = await cs.compileCsdText(getFullCode(currentUserCode));
   if (compileResult != 0) {
-    csoundInstance = undefined;
+    cs = undefined;
     return;
   }
 
   // Tweaks
-  csoundInstance.removeAllListeners("message");
-  csoundInstance.addListener("message", msg => onMessage(msg, false));
-  await csoundInstance.once("stop", () => csoundInstance = undefined );
-  await csoundInstance.start();
+  cs.removeAllListeners("message");
+  cs.addListener("message", msg => onMessage(msg, false));
+  await cs.once("stop", () => cs = undefined );
+  await cs.start();
 }
 
 async function evalChange() {
-  if (!csoundInstance) return;
+  if (!cs) return;
   let commitRange = getCommitRange(editor);
-  let compileRes = await csoundInstance.compileOrc(commitRange.text);
+  let compileRes = await cs.compileOrc(commitRange.text);
   if (compileRes == 0) flash(editor, commitRange, "cm-highlight-good");
   else flash(editor, commitRange, "cm-highlight-bad");
-  // await csoundInstance.evalCode(currentUserCode);
+  // await cs.evalCode(currentUserCode);
   return true;
 }
 
 elmBtnPlayPause.addEventListener("click", async function () {
-  if (!csoundInstance) await startCsound();
+  if (!cs) await startCsound();
   else await stopCsound();
   editor.focus();
 });
@@ -168,3 +148,16 @@ function onMessage(msg, isError) {
   elmCsoundLog.appendChild(document.createElement("br"));
   elmCsoundLog.scrollTop = elmCsoundLog.scrollHeight;
 }
+
+document.addEventListener("mousemove", async e => {
+  if (!cs) return;
+  const page = document.documentElement;
+  const [w, h] = [page.clientWidth, page.clientHeight];
+  let [x, y] = [e.clientX, e.clientY];
+  x /= w;
+  y /= h;
+  const codeX = `gkMouseX init ${x}`;
+  const codeY = `gkMouseY init ${y}`;
+  await cs.compileOrc(codeX);
+  await cs.compileOrc(codeY);
+});
