@@ -16,7 +16,7 @@ console.log = onLog;
 // OK inject (normalized) mouse X and Y
 // OK inject mouse coords without re-parsing (OOM)
 // OK cache bustig on includes
-// -- build pipeline
+// OK build pipeline
 // -- save, download, rename
 // -- saved patches list
 // -- structure app :)
@@ -97,8 +97,9 @@ async function loadAsset(fileURL, fileName) {
 
 async function startCsound() {
 
-  elmBtnPlayPause.classList.add("on");
   cs = await Csound();
+  if (!cs) return;
+  elmBtnPlayPause.classList.add("on");
 
   // Load assets
   for (const sample of samples)
@@ -107,6 +108,7 @@ async function startCsound() {
   // Compile full initial code
   const compileResult = await cs.compileCsdText(getFullCode(currentUserCode));
   if (compileResult != 0) {
+    elmBtnPlayPause.classList.remove("on");
     cs = undefined;
     return;
   }
