@@ -14,13 +14,13 @@ console.log = onLog;
 // OK re-eval only instrument / line; also flash?
 // OK steal+adapt clock from steven yi or sungmin
 // OK inject (normalized) mouse X and Y
-// -- inject mouse coords without re-parsing (OOM)
+// OK inject mouse coords without re-parsing (OOM)
+// OK cache bustig on includes
+// -- build pipeline
 // -- save, download, rename
 // -- saved patches list
 // -- structure app :)
-// -- build pipeline
 // -- spectrum analysis inset
-// -- catch csound-generated midi events in JS
 
 
 const elmCsoundLog = document.querySelector(".csound-log");

@@ -1,7 +1,44 @@
 import * as esbuild from "esbuild"
+import * as fs from "fs";
 import { livereloadPlugin } from "@jgoz/esbuild-plugin-livereload";
 
-async function watch() {
+const timestamp = (+new Date).toString(36);
+
+const args = (argList => {
+  let res = {};
+  let opt, thisOpt, curOpt;
+  for (let i = 0; i < argList.length; i++) {
+    thisOpt = argList[i].trim();
+    opt = thisOpt.replace(/^\-+/, "");
+    if (opt === thisOpt) {
+      // argument value
+      if (curOpt) res[curOpt] = opt;
+      curOpt = null;
+    } else {
+      // argument name
+      curOpt = opt;
+      res[curOpt] = true;
+    }
+  }
+  //console.log(res);
+  return res;
+})(process.argv);
+
+const cacheBusterPlugin = {
+  name: "cacheBusterPlugin",
+  setup(build) {
+    build.onEnd(() => {
+      const dstr = "[" + new Date().toLocaleTimeString() + "] ";
+      console.log(dstr + "Build finished");
+      const index = fs.readFileSync("./public/index.html", {encoding: "utf-8"});
+      const newIndex = index.replaceAll("%%VERSION%%", timestamp);
+      fs.writeFileSync("./public/index.html", newIndex);
+    })
+  },
+};
+
+
+async function build() {
   const context = await esbuild.context({
     entryPoints: ["src/index.html", "src/app.css", "src/app.js", "src/samples/*"],
     outdir: "public",
@@ -14,12 +51,23 @@ async function watch() {
     },
     write: true,
     metafile: true,
-    plugins: [livereloadPlugin()],
+    plugins: [
+      livereloadPlugin(),
+      cacheBusterPlugin,
+    ],
   });
-  await context.watch();
-  await context.serve({
-    port: 8080,
-  });
+
+  if (args.watch) {
+    await context.watch();
+    await context.serve({
+      port: 8080,
+    });
+  }
+  else {
+    await context.rebuild();
+    await context.dispose();
+    process.exit(0);
+  }
 }
 
-void watch();
+void build();
