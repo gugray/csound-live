@@ -68,7 +68,6 @@ editor = new EditorView({
     EditorView.updateListener.of(onChange)
   ],
   parent: elmEditorHost,
-
 });
 
 editor.dispatch({

@@ -48,6 +48,7 @@ footer {
 .editor {
   position: fixed; top: 96px; right: 32px; left: 32px; bottom: 32px;
   width: calc(50% - 32px);
+  background-color: #202020;
   & #editorHost { height: 100%; }
 }
 
