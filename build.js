@@ -39,7 +39,7 @@ const cacheBusterPlugin = {
 
 
 async function build() {
-  const entryPoints = ["src/index.html", "src/app.css", "src/app.js"];
+  const entryPoints = ["src/index.html", "src/app.css", "src/app.js", "src/fonts/*"];
   if (fs.existsSync("src/samples")) entryPoints.push("src/samples/*");
   const plugins = [cacheBusterPlugin];
   if (args.watch) plugins.push(livereloadPlugin());
@@ -52,6 +52,7 @@ async function build() {
       ".html": "copy",
       ".css": "copy",
       ".aiff": "copy",
+      ".woff2": "copy",
     },
     write: true,
     metafile: true,
