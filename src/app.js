@@ -6,39 +6,84 @@ import { keymap } from "@codemirror/view";
 import { csoundMode } from "@hlolli/codemirror-lang-csound";
 import { Csound } from "@csound/browser";
 import { initialUserCode, orcDefines, csdTemplate } from "./csound_content.js";
+import { TitlePanel } from "./title_panel.js";
+import { Dispatcher, Events } from "./dispatcher.js";
+import { Storage } from "./storage.js";
 
-const clog = console.log;
-console.log = onLog;
-
-// OK eat tab, shift-tab
-// XX tweak auto-ident?
-// OK re-eval only instrument / line; also flash?
-// OK steal+adapt clock from steven yi or sungmin
-// OK inject (normalized) mouse X and Y
-// OK inject mouse coords without re-parsing (OOM)
-// OK cache bustig on includes
-// OK build pipeline
-// OK fix caching in nginx / was correct all along
-// OK do not add livereload in prod
-// -- save, download, rename
+// -- navigate-away warning if dirty
 // -- saved patches list
 // -- structure app :)
 // -- spectrum analysis inset
-
-
-const elmVersion = document.getElementById("version");
-const elmCsoundLog = document.querySelector(".csound-log");
-const elmBtnPlayPause = document.getElementById("btnPlayPause");
-const elmEditorHost = document.getElementById("editorHost");
-let editor;
-let currentUserCode = initialUserCode;
-let cs; // Csound instance
+// -- p5 panel?
 
 const samples = [
   // ["./samples/kick1.aiff", "kick1.aiff"],
 ];
 
+const clog = console.log;
+console.log = onLog;
+
+const elmVersion = document.getElementById("version");
+const elmCsoundLog = document.querySelector(".csound-log");
+const elmBtnPlayPause = document.getElementById("btnPlayPause");
+const elmBtnSave = document.getElementById("btnSave");
+const elmBtnDownload = document.getElementById("btnDownload");
+const elmEditorHost = document.getElementById("editorHost");
+const dispatcher = new Dispatcher();
+const storage = new Storage();
+let titlePanel, editor;
+let editorBlockChange = false;
+let cs; // Csound instance
+
+const patch = {
+  id: null,
+  lastChanged: new Date().toISOString(),
+  title: null,
+  content: initialUserCode,
+};
+
+[patch.id, patch.title] = storage.getNewPatchInfo();
 elmVersion.innerText = verstr;
+titlePanel = new TitlePanel(document.getElementById("pnlTitle"), dispatcher, patch.title);
+elmBtnSave.addEventListener("click", () => savePatch());
+elmBtnDownload.addEventListener("click", () => downloadPatch());
+dispatcher.subscribe(Events.focus_patch, () => editor.focus());
+dispatcher.subscribe(Events.change_title, title => changeTitle(title));
+
+function savePatch() {
+  patch.content = getPatchContent();
+  storage.savePatch(patch.id, patch.title, patch.content);
+  elmBtnSave.disabled = true;
+  dispatcher.dispatch(Events.patch_saved);
+}
+
+function changeTitle(title) {
+  patch.title = title;
+  savePatch();
+}
+
+function downloadPatch() {
+  patch.content = getPatchContent();
+  const hasUnsavedChanges = storage.hasUnsavedChanges(patch.id, patch.content);
+
+  const d = hasUnsavedChanges ? new Date() : new Date(patch.lastChanged);
+  const dateStr = d.getFullYear() + "-" +
+    ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+    ("0" + d.getDate()).slice(-2);
+  let titleDashes = patch.title.replaceAll(" ", "-");
+  let fname = `${dateStr}-${titleDashes}.orc`;
+  let file;
+  let data = [];
+  data.push(getPatchContent());
+  let properties = {type: 'text/plain'};
+  try { file = new File(data, fname, properties); }
+  catch { file = new Blob(data, properties); }
+  let url = URL.createObjectURL(file);
+  const elm = document.createElement("a");
+  elm.href = url;
+  elm.download = fname;
+  elm.dispatchEvent(new MouseEvent("click"));
+}
 
 function getFullCode(userCode) {
   let res = csdTemplate;
@@ -48,14 +93,19 @@ function getFullCode(userCode) {
 }
 
 function onChange(event) {
-  currentUserCode = event.state.doc.toString();
+  if (editorBlockChange) return;
+  if (!event.docChanged) return;
+  elmBtnSave.disabled = false;
+  dispatcher.dispatch(Events.patch_changed);
+}
+
+function getPatchContent() {
+  return editor.state.doc.toString();
 }
 
 const customKeymap = keymap.of([
-  {
-    key: "Cmd-Enter",
-    run: evalChange,
-  },
+  { key: "Cmd-Enter", run: evalChange, },
+  { key: "Ctrl-Enter", run: evalChange, },
 ]);
 
 editor = new EditorView({
@@ -70,9 +120,11 @@ editor = new EditorView({
   parent: elmEditorHost,
 });
 
+editorBlockChange = true;
 editor.dispatch({
-  changes: { from: 0, to: editor.state.doc.length, insert: initialUserCode }
+  changes: { from: 0, to: editor.state.doc.length, insert: patch.content }
 });
+editorBlockChange = false;
 
 setTimeout(() => {
   editor.focus();
@@ -81,10 +133,20 @@ setTimeout(() => {
 elmEditorHost.addEventListener("click", () => editor.focus());
 
 document.body.addEventListener("keydown", async e => {
+  let handled = false;
   if (e.key == "Escape" && cs) {
     await stopCsound();
+    handled = true;
+  }
+  else if (e.ctrlKey || e.metaKey) {
+    if (e.key == "s") {
+      savePatch();
+      handled = true;
+    }
+  }
+  if (handled) {
     e.preventDefault();
-    return false;
+    e.stopPropagation();
   }
 });
 
@@ -111,7 +173,8 @@ async function startCsound() {
     await loadAsset(sample[0], sample[1]);
 
   // Compile full initial code
-  const compileResult = await cs.compileCsdText(getFullCode(currentUserCode));
+  patch.content = getPatchContent();
+  const compileResult = await cs.compileCsdText(getFullCode(patch.content));
   if (compileResult != 0) {
     elmBtnPlayPause.classList.remove("on");
     cs = undefined;
@@ -127,11 +190,11 @@ async function startCsound() {
 
 async function evalChange() {
   if (!cs) return;
+  patch.content = getPatchContent();
   let commitRange = getCommitRange(editor);
   let compileRes = await cs.compileOrc(commitRange.text);
   if (compileRes == 0) flash(editor, commitRange, "cm-highlight-good");
   else flash(editor, commitRange, "cm-highlight-bad");
-  // await cs.evalCode(currentUserCode);
   return true;
 }
 

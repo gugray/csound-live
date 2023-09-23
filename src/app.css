@@ -1,13 +1,24 @@
+/* Defines */
 :root {
   --fntMono: "IBM Plex Mono", monospace;
   --fntSans: "IBM Plex Sans", sans-serif;
   --fntBaseSize: 14px;
 }
 
+/* Global overrides */
 * { box-sizing: border-box; scrollbar-color: #333 #202020; }
 ::-webkit-scrollbar { background-color: #202020; width: 8px; }
 ::-webkit-scrollbar-thumb { background-color: #333; }
 
+button { display: block; border: none; margin: 0; padding: 0; background-color: transparent; }
+
+& input[type=text] {
+  box-shadow: none; -webkit-box-shadow: none; -webkit-appearance: none; outline: none;
+  -webkit-border-radius: 0px; border-radius: 0; border: none;
+  font-family: inherit; color: #ccc; background-color: #202020;
+}
+
+/* Layout, specifics */
 html, body {
   height: 100%; width: 100%; margin: 0; padding: 0;
 }
@@ -23,16 +34,59 @@ footer {
 }
 .top-ctrl {
   position: fixed; top: 32px; right: 32px; left: 32px; height: 48px;
+  display: flex;
   background-color: #202020;
   font-family: var(--fntSans);
-  & button {
-    display: inline-block; margin: 4px; padding: 2px 0 0 0; width: 40px; height: 40px;
+  & button#btnPlayPause {
+    margin: 4px 12px 4px 4px; padding: 2px 0 0 0; width: 40px; height: 40px;
     border: 2px solid #666; border-radius: 24px;
-    background-color: #202020;
     &:hover { background-color: #383838; }
     & svg { width: 32px; height: 32px; }
     & svg * { stroke: #666; }
-    &.on svg * { stroke: #ef9336; }
+    &.on svg * { stroke: #ef9336; filter: drop-shadow(2px 2px 22px #ef9336); }
+  }
+  & button.small {
+    margin: 8px 3px 0 0; padding: 3px; width: 32px; height: 32px;
+    & svg { width: 26px; height: 26px; }
+    & svg * { stroke: #9f7e52; }
+    &:hover svg * { stroke: #d08e4c; }
+    &[disabled] svg * { stroke: #444; }
+  }
+  & button#btnLibrary {
+    width: 40px; height: 40px; margin: 4px 8px;
+    & svg { width: 100%; height: 100%; }
+    & svg * { stroke: #9f7e52; }
+    &:hover svg * { stroke: #d08e4c; }
+  }
+  & #expander { flex-grow: 1; }
+  & #pnlTitle {
+    flex-grow: 1; max-width: 800px; margin-left: 4px;
+    display: flex; align-items: center;
+    font-size: 18px;
+    & span { display: block; padding: 3px 0 0 5px; visibility: hidden; }
+    & span.visible { visibility: visible;}
+    & .titleBorder {
+      display: flex;
+      border: 1px solid transparent;
+      border-radius: 4px; padding: 4px 4px 4px 0; width: 100%;
+      background-color: #202020;
+    }
+    &:focus-within .titleBorder { border: 1px solid #ccc; }
+    & input[type=text] {
+      display: block; flex-grow: 1;
+      font-size: 18px; color: #aaa; font-weight: 600;
+      &:focus { color: #ccc; }
+    }
+    & button {
+      width: 26px; height: 26px;
+      visibility: hidden;
+      & svg { display: block; width: 100%; height: 100%; }
+      &.cancel svg * { stroke: #9f4861; }
+      &.cancel:hover svg * { stroke: #e74776; }
+      &.ok svg * { stroke: #5f7558; }
+      &.ok:hover svg * { stroke: #85b973; }
+    }
+    &:focus-within button { visibility: visible; }
   }
 }
 .csound-log {
