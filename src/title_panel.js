@@ -14,56 +14,65 @@ export class TitlePanel {
 
     wireUp(this);
   }
+
+  setTitle(title) {
+    this.elmInput.value = title;
+    this.elmChanges.classList.remove("visible");
+  }
+
+  isDirty() {
+    return this.elmChanges.classList.contains("visible");
+  }
 }
 
-function updateTitle(tp) {
-  const currTitle = tp.elmInput.value;
-  if (currTitle != tp.origTitle)
-    tp.dispatcher.dispatch(Events.change_title, currTitle);
-  delete tp.origTitle;
-  tp.dispatcher.dispatch(Events.focus_patch);
+function updateTitle(obj) {
+  const currTitle = obj.elmInput.value;
+  if (currTitle != obj.origTitle)
+    obj.dispatcher.dispatch(Events.change_title, currTitle);
+  delete obj.origTitle;
+  obj.dispatcher.dispatch(Events.focus_patch);
 }
 
-function wireUp(tp) {
+function wireUp(obj) {
 
-  tp.elmInput.addEventListener("focus", () => {
-    if (!tp.origTitle) tp.origTitle = tp.elmInput.value;
+  obj.elmInput.addEventListener("focus", () => {
+    if (!obj.origTitle) obj.origTitle = obj.elmInput.value;
   });
 
-  tp.elmPanel.addEventListener("focusout", e => {
-    const focusInPanel = tp.elmPanel.matches(':focus-within');
+  obj.elmPanel.addEventListener("focusout", e => {
+    const focusInPanel = obj.elmPanel.matches(':focus-within');
     if (focusInPanel) return;
-    if (tp.hasOwnProperty("origTitle")) {
-      tp.elmInput.value = tp.origTitle;
-      delete tp.origTitle;
+    if (obj.hasOwnProperty("origTitle")) {
+      obj.elmInput.value = obj.origTitle;
+      delete obj.origTitle;
     }
   });
 
-  tp.dispatcher.subscribe(Events.patch_changed, () => {
-    tp.elmChanges.classList.add("visible");
+  obj.dispatcher.subscribe(Events.patch_changed, () => {
+    obj.elmChanges.classList.add("visible");
   });
 
-  tp.dispatcher.subscribe(Events.patch_saved, () => {
-    tp.elmChanges.classList.remove("visible");
+  obj.dispatcher.subscribe(Events.patch_saved, () => {
+    obj.elmChanges.classList.remove("visible");
   });
 
-  tp.elmPanel.addEventListener("keydown", (e) => {
+  obj.elmPanel.addEventListener("keydown", (e) => {
     if (e.key == "Escape") {
-      tp.dispatcher.dispatch(Events.focus_patch);
+      obj.dispatcher.dispatch(Events.focus_patch);
       e.preventDefault();
       e.stopPropagation();
     }
     else if (e.key == "Enter") {
-      updateTitle(tp);
+      updateTitle(obj);
       e.preventDefault();
       e.stopPropagation();
     }
   });
 
-  tp.elmCancel.addEventListener("click", () => {
+  obj.elmCancel.addEventListener("click", () => {
     // This triggers focousout, which resets input's value to original
-    tp.dispatcher.dispatch(Events.focus_patch);
+    obj.dispatcher.dispatch(Events.focus_patch);
   });
 
-  tp.elmOK.addEventListener("click", () => updateTitle(tp));
+  obj.elmOK.addEventListener("click", () => updateTitle(obj));
 }

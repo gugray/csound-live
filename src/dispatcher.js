@@ -3,6 +3,10 @@ export const Events = {
   patch_saved: "patch_saved",
   focus_patch: "focus_patch",
   change_title: "change_title",
+  modal_closed: "modal_closed",
+  delete_patch: "delete_patch",
+  duplicate_patch: "duplicate_patch",
+  open_patch: "open_patch",
 }
 
 export class Dispatcher {

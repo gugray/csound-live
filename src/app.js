@@ -7,12 +7,14 @@ import { csoundMode } from "@hlolli/codemirror-lang-csound";
 import { Csound } from "@csound/browser";
 import { initialUserCode, orcDefines, csdTemplate } from "./csound_content.js";
 import { TitlePanel } from "./title_panel.js";
+import { SavedPatchesModal } from "./saved_patches_modal.js";
 import { Dispatcher, Events } from "./dispatcher.js";
 import { Storage } from "./storage.js";
 
 // -- navigate-away warning if dirty
 // -- saved patches list
-// -- structure app :)
+// -- clone
+// -- re-open latest patch
 // -- spectrum analysis inset
 // -- p5 panel?
 
@@ -21,16 +23,19 @@ const samples = [
 ];
 
 const clog = console.log;
-console.log = onLog;
-
 const elmVersion = document.getElementById("version");
 const elmCsoundLog = document.querySelector(".csound-log");
 const elmBtnPlayPause = document.getElementById("btnPlayPause");
 const elmBtnSave = document.getElementById("btnSave");
 const elmBtnDownload = document.getElementById("btnDownload");
+const elmBtnDuplicate = document.getElementById("btnDuplicate");
+const elmBtnLibrary = document.getElementById("btnLibrary");
 const elmEditorHost = document.getElementById("editorHost");
+const elmModal = document.querySelector(".modal");
 const dispatcher = new Dispatcher();
 const storage = new Storage();
+let patchExists = false;
+let modal = null;
 let titlePanel, editor;
 let editorBlockChange = false;
 let cs; // Csound instance
@@ -42,19 +47,83 @@ const patch = {
   content: initialUserCode,
 };
 
-[patch.id, patch.title] = storage.getNewPatchInfo();
-elmVersion.innerText = verstr;
-titlePanel = new TitlePanel(document.getElementById("pnlTitle"), dispatcher, patch.title);
-elmBtnSave.addEventListener("click", () => savePatch());
-elmBtnDownload.addEventListener("click", () => downloadPatch());
-dispatcher.subscribe(Events.focus_patch, () => editor.focus());
-dispatcher.subscribe(Events.change_title, title => changeTitle(title));
+init();
+
+function init() {
+
+  console.log = onLog;
+
+  [patch.id, patch.title] = storage.getNewPatchInfo();
+  elmVersion.innerText = verstr;
+  titlePanel = new TitlePanel(document.getElementById("pnlTitle"), dispatcher, patch.title);
+  elmBtnSave.addEventListener("click", () => savePatch());
+  elmBtnSave.disabled = patchExists;
+  elmBtnDuplicate.addEventListener("click", () => duplicatePatch(patch.id));
+  elmBtnDownload.addEventListener("click", () => downloadPatch());
+  elmBtnLibrary.addEventListener("click", () => {
+    modal = new SavedPatchesModal(elmModal, dispatcher, storage);
+  });
+  dispatcher.subscribe(Events.focus_patch, () => editor.focus());
+  dispatcher.subscribe(Events.change_title, title => changeTitle(title));
+  dispatcher.subscribe(Events.modal_closed, () => modal = null);
+  dispatcher.subscribe(Events.duplicate_patch, id => duplicatePatch(id));
+  dispatcher.subscribe(Events.open_patch, id => loadPatch(id) );
+  dispatcher.subscribe(Events.delete_patch, id => deletePatch(id));
+
+  window.addEventListener("beforeunload", e => {
+    patch.content = getPatchContent();
+    if (titlePanel.isDirty()) {
+      e.preventDefault();
+      e.returnValue = "Unsaved changes";
+    }
+  });
+}
+
+function deletePatch(id) {
+  if (id == patch.id) {
+    alert("Cannot delete the patch you are currently editing");
+    return;
+  }
+  storage.deletePatch(id);
+  if (!modal) return;
+  modal.updatePatchList();
+}
 
 function savePatch() {
   patch.content = getPatchContent();
-  storage.savePatch(patch.id, patch.title, patch.content);
+  patch.lastChanged = storage.savePatch(patch.id, patch.title, patch.content);
+  patchExists = true;
   elmBtnSave.disabled = true;
+  elmBtnDuplicate.disabled = false;
   dispatcher.dispatch(Events.patch_saved);
+}
+
+function duplicatePatch(id) {
+  patch.content = getPatchContent();
+  const newId = storage.duplicatePatch(id);
+  // If "saved patches" modal is open and current patch is dirty: just refresh list
+  if (modal && titlePanel.isDirty()) {
+    modal.updatePatchList();
+    return;
+  }
+  // Open new patch
+  void loadPatch(newId);
+}
+
+async function loadPatch(id) {
+  if (cs) await stopCsound();
+  const p = storage.loadPatch(id);
+  patchExists = true;
+  patch.id = p.id;
+  patch.content = p.content;
+  patch.lastChanged = p.lastChanged;
+  patch.title = p.title;
+  titlePanel.setTitle(p.title);
+  showCurrentContent();
+  if (modal) modal.close();
+  editor.focus();
+  elmBtnSave.disabled = true;
+  elmBtnDuplicate.disabled = false;
 }
 
 function changeTitle(title) {
@@ -64,9 +133,7 @@ function changeTitle(title) {
 
 function downloadPatch() {
   patch.content = getPatchContent();
-  const hasUnsavedChanges = storage.hasUnsavedChanges(patch.id, patch.content);
-
-  const d = hasUnsavedChanges ? new Date() : new Date(patch.lastChanged);
+  const d = titlePanel.isDirty() ? new Date() : new Date(patch.lastChanged);
   const dateStr = d.getFullYear() + "-" +
     ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
     ("0" + d.getDate()).slice(-2);
@@ -96,6 +163,7 @@ function onChange(event) {
   if (editorBlockChange) return;
   if (!event.docChanged) return;
   elmBtnSave.disabled = false;
+  elmBtnDuplicate.disabled = true;
   dispatcher.dispatch(Events.patch_changed);
 }
 
@@ -107,6 +175,14 @@ const customKeymap = keymap.of([
   { key: "Cmd-Enter", run: evalChange, },
   { key: "Ctrl-Enter", run: evalChange, },
 ]);
+
+function showCurrentContent() {
+  editorBlockChange = true;
+  editor.dispatch({
+    changes: {from: 0, to: editor.state.doc.length, insert: patch.content}
+  });
+  editorBlockChange = false;
+}
 
 editor = new EditorView({
   extensions: [
@@ -120,11 +196,7 @@ editor = new EditorView({
   parent: elmEditorHost,
 });
 
-editorBlockChange = true;
-editor.dispatch({
-  changes: { from: 0, to: editor.state.doc.length, insert: patch.content }
-});
-editorBlockChange = false;
+showCurrentContent();
 
 setTimeout(() => {
   editor.focus();
@@ -134,9 +206,11 @@ elmEditorHost.addEventListener("click", () => editor.focus());
 
 document.body.addEventListener("keydown", async e => {
   let handled = false;
-  if (e.key == "Escape" && cs) {
-    await stopCsound();
+  if (e.key == "Escape") {
     handled = true;
+    if (modal) modal.close();
+    else if (cs) await stopCsound();
+    else handled = false;
   }
   else if (e.ctrlKey || e.metaKey) {
     if (e.key == "s") {
