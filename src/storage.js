@@ -14,12 +14,22 @@ export class Storage {
   }
 
   getUniqueTitle(desiredTitle) {
+
+    let baseTitle = desiredTitle;
+    let patchIx = 0;
+    let re = new RegExp("^(.+) \\((\\d+)\\)$");
+    let m = re.exec(baseTitle);
+    if (m) {
+      baseTitle = m[1];
+      patchIx = Number.parseInt(m[2]) + 1;
+    }
+
     const patchList = this.loadPatchList();
-    let patchIx = 1;
-    let title = desiredTitle;
+    let title = baseTitle;
+    if (patchIx != 0) title = `${baseTitle} (${patchIx})`;
     while (patchList.find(x => x.title == title) !== undefined) {
       ++patchIx;
-      title = `${desiredTitle} (${patchIx})`;
+      title = `${baseTitle} (${patchIx})`;
     }
     return title;
   }

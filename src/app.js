@@ -16,7 +16,7 @@ import { getDateStr } from "./utils.js";
 // OK saved patches list
 // OK clone
 // OK re-open latest patch
-// -- smarter numbering on clone
+// OK smarter numbering on clone
 // -- log control events
 // -- full screen
 // -- spectrum analysis inset
