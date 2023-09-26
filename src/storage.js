@@ -1,3 +1,6 @@
+import JSZip from "jszip";
+import { getDateStr } from "./utils.js";
+
 const defaultTitle = "New Csound patch";
 const patchesKey = "patches";
 const contentKey = "patch";
@@ -22,15 +25,16 @@ export class Storage {
   }
 
   savePatch(id, title, content) {
-    const lastChanged = new Date().toISOString();
+    const dtNow = new Date().toISOString();
     const patchList = this.loadPatchList();
     let itm = patchList.find(x => x.id == id);
     if (itm) {
       itm.title = title;
-      itm.lastChanged = lastChanged;
+      itm.lastChanged = dtNow;
+      itm.lastOpened = dtNow;
     }
     else {
-      itm = { id, title, lastChanged };
+      itm = { id, title, lastChanged: dtNow, lastOpened: dtNow };
       patchList.push(itm);
     }
     localStorage.setItem(patchesKey, JSON.stringify(patchList));
@@ -53,8 +57,17 @@ export class Storage {
     const patchList = this.loadPatchList();
     let itm = patchList.find(x => x.id == id);
     if (!itm) return null;
+    itm.lastOpened = new Date().toISOString();
+    localStorage.setItem(patchesKey, JSON.stringify(patchList));
     let content = localStorage.getItem(`${contentKey}-${id}`);
     return { id, title: itm.title, lastChanged: itm.lastChanged, content };
+  }
+
+  getLastPatchId() {
+    const patchList = this.loadPatchList();
+    if (patchList.length == 0) return null;
+    patchList.sort((a, b) => b.lastChanged.localeCompare(a.lastChanged));
+    return patchList[0].id;
   }
 
   duplicatePatch(id) {
@@ -72,5 +85,22 @@ export class Storage {
     patchList = patchList.filter(p => p.id != id);
     localStorage.setItem(patchesKey, JSON.stringify(patchList));
     localStorage.removeItem(`${contentKey}-${id}`);
+  }
+
+  getAllPatchesZip(callback) {
+
+    // Create "files" to zip
+    const patchList = this.loadPatchList();
+    let zip = new JSZip();
+    for (const p of patchList) {
+      const dateStr = getDateStr(new Date(p.lastChanged));
+      const titleDashes = p.title.replaceAll(" ", "-");
+      const name = `${dateStr}-${titleDashes}.orc`;
+      const content = localStorage.getItem(`${contentKey}-${p.id}`);
+      zip.file(name, content);
+    }
+
+    // Generate zip
+    zip.generateAsync({type: "blob"}).then(data => callback(data));
   }
 }

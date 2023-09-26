@@ -10,11 +10,15 @@ import { TitlePanel } from "./title_panel.js";
 import { SavedPatchesModal } from "./saved_patches_modal.js";
 import { Dispatcher, Events } from "./dispatcher.js";
 import { Storage } from "./storage.js";
+import { getDateStr } from "./utils.js";
 
-// -- navigate-away warning if dirty
-// -- saved patches list
-// -- clone
-// -- re-open latest patch
+// OK navigate-away warning if dirty
+// OK saved patches list
+// OK clone
+// OK re-open latest patch
+// -- smarter numbering on clone
+// -- log control events
+// -- full screen
 // -- spectrum analysis inset
 // -- p5 panel?
 
@@ -38,7 +42,7 @@ let patchExists = false;
 let modal = null;
 let titlePanel, editor;
 let editorBlockChange = false;
-let cs; // Csound instance
+let csound;
 
 const patch = {
   id: null,
@@ -47,15 +51,37 @@ const patch = {
   content: initialUserCode,
 };
 
-init();
+void init();
 
-function init() {
+async function init() {
 
   console.log = onLog;
-
-  [patch.id, patch.title] = storage.getNewPatchInfo();
   elmVersion.innerText = verstr;
+
+  // Start with new default patch, or load most recent patch
+  const lastPatchId = storage.getLastPatchId();
+  if (!lastPatchId) [patch.id, patch.title] = storage.getNewPatchInfo();
+  else {
+    const p = storage.loadPatch(lastPatchId);
+    patchExists = true;
+    patch.id = p.id;
+    patch.content = p.content;
+    patch.lastChanged = p.lastChanged;
+    patch.title = p.title;
+  }
+
   titlePanel = new TitlePanel(document.getElementById("pnlTitle"), dispatcher, patch.title);
+  editor = createEditor();
+
+  document.body.addEventListener("keydown", async e => onKeyDown(e));
+  window.addEventListener("beforeunload", e => onBeforeUnload(e));
+
+  elmBtnPlayPause.addEventListener("click", async function () {
+    if (!csound) await startCsound();
+    else await stopCsound();
+    editor.focus();
+  });
+
   elmBtnSave.addEventListener("click", () => savePatch());
   elmBtnSave.disabled = patchExists;
   elmBtnDuplicate.addEventListener("click", () => duplicatePatch(patch.id));
@@ -63,6 +89,8 @@ function init() {
   elmBtnLibrary.addEventListener("click", () => {
     modal = new SavedPatchesModal(elmModal, dispatcher, storage);
   });
+  elmEditorHost.addEventListener("click", () => editor.focus());
+
   dispatcher.subscribe(Events.focus_patch, () => editor.focus());
   dispatcher.subscribe(Events.change_title, title => changeTitle(title));
   dispatcher.subscribe(Events.modal_closed, () => modal = null);
@@ -70,12 +98,48 @@ function init() {
   dispatcher.subscribe(Events.open_patch, id => loadPatch(id) );
   dispatcher.subscribe(Events.delete_patch, id => deletePatch(id));
 
-  window.addEventListener("beforeunload", e => {
-    patch.content = getPatchContent();
-    if (titlePanel.isDirty()) {
-      e.preventDefault();
-      e.returnValue = "Unsaved changes";
-    }
+  document.addEventListener("mousemove", async e => {
+    if (!csound) return;
+    const page = document.documentElement;
+    const [w, h] = [page.clientWidth, page.clientHeight];
+    let [x, y] = [e.clientX, e.clientY];
+    x /= w;
+    y /= h;
+    const scoreEvent = `i999 0 0.01 ${x} ${y}`;
+    await csound.inputMessage(scoreEvent);
+
+    // Alternatively: do this
+    // csound.setControlChannel("gkMouseX", x);
+    // gkMouseX init 0
+    // gkMouseX chnexport "gkMouseX", 3, 2, 0, 0, 1
+    // imode: 3: 1=input, 2=output
+    // itype: 2: linear scale (3: exponential; 0: default, ignores next params)
+    // idft: 0: default value
+    // imin: 0: min value
+    // imax: 1: max value
+  });
+
+  showCurrentContent();
+  setTimeout(() => editor.focus(), 200);
+}
+
+function createEditor() {
+
+  const customKeymap = keymap.of([
+    { key: "Cmd-Enter", run: evalChange, },
+    { key: "Ctrl-Enter", run: evalChange, },
+  ]);
+
+  return new EditorView({
+    extensions: [
+      customKeymap,
+      basicSetup,
+      keymap.of([indentWithTab]),
+      csoundMode({ fileType: "orc" }),
+      flashPlugin,
+      EditorView.updateListener.of(onChange)
+    ],
+    parent: elmEditorHost,
   });
 }
 
@@ -111,7 +175,7 @@ function duplicatePatch(id) {
 }
 
 async function loadPatch(id) {
-  if (cs) await stopCsound();
+  if (csound) await stopCsound();
   const p = storage.loadPatch(id);
   patchExists = true;
   patch.id = p.id;
@@ -134,9 +198,7 @@ function changeTitle(title) {
 function downloadPatch() {
   patch.content = getPatchContent();
   const d = titlePanel.isDirty() ? new Date() : new Date(patch.lastChanged);
-  const dateStr = d.getFullYear() + "-" +
-    ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
-    ("0" + d.getDate()).slice(-2);
+  const dateStr = getDateStr(d);
   let titleDashes = patch.title.replaceAll(" ", "-");
   let fname = `${dateStr}-${titleDashes}.orc`;
   let file;
@@ -171,11 +233,6 @@ function getPatchContent() {
   return editor.state.doc.toString();
 }
 
-const customKeymap = keymap.of([
-  { key: "Cmd-Enter", run: evalChange, },
-  { key: "Ctrl-Enter", run: evalChange, },
-]);
-
 function showCurrentContent() {
   editorBlockChange = true;
   editor.dispatch({
@@ -184,62 +241,22 @@ function showCurrentContent() {
   editorBlockChange = false;
 }
 
-editor = new EditorView({
-  extensions: [
-    customKeymap,
-    basicSetup,
-    keymap.of([indentWithTab]),
-    csoundMode({ fileType: "orc" }),
-    flashPlugin,
-    EditorView.updateListener.of(onChange)
-  ],
-  parent: elmEditorHost,
-});
-
-showCurrentContent();
-
-setTimeout(() => {
-  editor.focus();
-}, 200);
-
-elmEditorHost.addEventListener("click", () => editor.focus());
-
-document.body.addEventListener("keydown", async e => {
-  let handled = false;
-  if (e.key == "Escape") {
-    handled = true;
-    if (modal) modal.close();
-    else if (cs) await stopCsound();
-    else handled = false;
-  }
-  else if (e.ctrlKey || e.metaKey) {
-    if (e.key == "s") {
-      savePatch();
-      handled = true;
-    }
-  }
-  if (handled) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-});
-
 async function stopCsound() {
-  await cs.stop();
+  await csound.stop();
   elmBtnPlayPause.classList.remove("on");
-  cs = undefined;
+  csound = undefined;
 }
 
 async function loadAsset(fileURL, fileName) {
   const response = await fetch(fileURL);
   const abuf = await response.arrayBuffer();
-  await cs.fs.writeFile(fileName, new Uint8Array(abuf));
+  await csound.fs.writeFile(fileName, new Uint8Array(abuf));
 };
 
 async function startCsound() {
 
-  cs = await Csound();
-  if (!cs) return;
+  csound = await Csound();
+  if (!csound) return;
   elmBtnPlayPause.classList.add("on");
 
   // Load assets
@@ -248,35 +265,29 @@ async function startCsound() {
 
   // Compile full initial code
   patch.content = getPatchContent();
-  const compileResult = await cs.compileCsdText(getFullCode(patch.content));
+  const compileResult = await csound.compileCsdText(getFullCode(patch.content));
   if (compileResult != 0) {
     elmBtnPlayPause.classList.remove("on");
-    cs = undefined;
+    csound = undefined;
     return;
   }
 
   // Tweaks
-  cs.removeAllListeners("message");
-  cs.addListener("message", msg => onMessage(msg, false));
-  await cs.once("stop", () => cs = undefined );
-  await cs.start();
+  csound.removeAllListeners("message");
+  csound.addListener("message", msg => onMessage(msg, false));
+  await csound.once("stop", () => csound = undefined );
+  await csound.start();
 }
 
 async function evalChange() {
-  if (!cs) return;
+  if (!csound) return;
   patch.content = getPatchContent();
   let commitRange = getCommitRange(editor);
-  let compileRes = await cs.compileOrc(commitRange.text);
+  let compileRes = await csound.compileOrc(commitRange.text);
   if (compileRes == 0) flash(editor, commitRange, "cm-highlight-good");
   else flash(editor, commitRange, "cm-highlight-bad");
   return true;
 }
-
-elmBtnPlayPause.addEventListener("click", async function () {
-  if (!cs) await startCsound();
-  else await stopCsound();
-  editor.focus();
-});
 
 function onLog(msg) {
   const tr = (new Error()).stack;
@@ -293,13 +304,30 @@ function onMessage(msg, isError) {
   elmCsoundLog.scrollTop = elmCsoundLog.scrollHeight;
 }
 
-document.addEventListener("mousemove", async e => {
-  if (!cs) return;
-  const page = document.documentElement;
-  const [w, h] = [page.clientWidth, page.clientHeight];
-  let [x, y] = [e.clientX, e.clientY];
-  x /= w;
-  y /= h;
-  const scoreEvent = `i999 0 0.01 ${x} ${y}`;
-  await cs.inputMessage(scoreEvent);
-});
+async function onKeyDown(e) {
+  let handled = false;
+  if (e.key == "Escape") {
+    handled = true;
+    if (modal) modal.close();
+    else if (csound) await stopCsound();
+    else handled = false;
+  }
+  else if (e.ctrlKey || e.metaKey) {
+    if (e.key == "s") {
+      savePatch();
+      handled = true;
+    }
+  }
+  if (handled) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}
+
+function onBeforeUnload(e) {
+  patch.content = getPatchContent();
+  if (titlePanel.isDirty()) {
+    e.preventDefault();
+    e.returnValue = "Unsaved changes";
+  }
+}

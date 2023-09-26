@@ -115,7 +115,7 @@ footer {
   &.visible { display: flex; }
 }
 .modal .modal-inner {
-  width: 100%; max-width: 900px; max-height: 100%; position: absolute;
+  width: 100%; max-width: 1024px; max-height: 100%; position: absolute;
   overflow-y: auto; padding: 24px; background-color: var(--clrPanelBg);
   & button.close {
     width: 32px; height: 32px; padding: 4px; background-color: #303030;
@@ -126,14 +126,21 @@ footer {
     margin: 0 0 24px 0;
     font-size: var(--fntSizeHeading);
   }
+  & p.remark { font-style: italic; color: var(--clrTextFaint); }
+  & a.download-all-patches {
+    display: inline-block; padding-bottom: 1px; color: var(--clrControl);
+    &:hover { color: var(--clrControlHover); text-decoration: none; }
+    &.hidden { display: none; }
+  }
   & table {
     width: 100%; border-collapse: collapse; margin-bottom: 32px;
-    & td { padding: 6px 12px 3px 6px; vertical-align: top;
-      border-bottom: 1px dashed var(--clrTextFainter); }
+    & td {
+      padding: 6px 12px 3px 6px; vertical-align: top; min-width: 180px;
+      border-bottom: 1px dashed var(--clrTextFainter);
+    }
     & thead td { border-bottom-style: solid; font-weight: 600; }
+    & thead tr td:last-child * { visibility: visible; font-weight: 400; }
     & tr td:first-child { width: 100%; padding-left: 0; }
-    & tr td:nth-child(2) { min-width: 180px; }
-    & tr td:last-child { min-width: 180px; }
     & tr td:last-child * { visibility: hidden; }
     & tr:hover td:last-child * { visibility: visible; }
     & tbody tr:hover td { background-color: #282828; }

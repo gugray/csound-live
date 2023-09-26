@@ -1,6 +1,8 @@
 import { Dispatcher, Events } from "./dispatcher.js";
 import { Storage } from "./storage.js";
-import { enc, fmtTime } from "./enc.js";
+import { enc, fmtTime } from "./utils.js";
+
+const allPatchesFileName = "patches.zip";
 
 export class SavedPatchesModal {
   constructor(elmHost, dispatcher, storage) {
@@ -10,6 +12,7 @@ export class SavedPatchesModal {
     this.elmClose = elmHost.querySelector(".close");
     this.elmTable = elmHost.querySelector("table");
     this.elmTableBody = elmHost.querySelector("tbody");
+    this.elmDownloadAll = elmHost.querySelector("a.download-all-patches");
     init(this);
     this.updatePatchList();
   }
@@ -31,10 +34,13 @@ export class SavedPatchesModal {
       html = html.replaceAll("{title}", enc(p.title));
       html = html.replaceAll("{id}", enc(p.id));
       html = html.replaceAll("{lastChanged}", fmtTime(p.lastChanged));
+      html = html.replaceAll("{lastOpened}", fmtTime(p.lastOpened));
       tableBodyHtml += html;
     }
     this.elmTableBody.innerHTML = tableBodyHtml;
     this.elmTableBody.addEventListener("click", e => onPatchClick(this, e));
+    if (patches.length < 2) this.elmDownloadAll.classList.add("hidden");
+    else this.elmDownloadAll.classList.remove("hidden");
   }
 }
 
@@ -44,6 +50,27 @@ function init(obj) {
     if (e.target == obj.elmHost) obj.close();
   });
   obj.elmClose.addEventListener("click", () => obj.close());
+  obj.elmDownloadAll.addEventListener("click", () => downloadAll(obj));
+}
+
+function downloadAll(obj) {
+
+  obj.storage.getAllPatchesZip(zip => {
+    let file;
+    let data = [];
+    data.push(zip);
+    let properties = {type: 'application/zip'};
+    try {
+      file = new File(data, allPatchesFileName, properties);
+    } catch {
+      file = new Blob(data, properties);
+    }
+    let url = URL.createObjectURL(file);
+    const elm = document.createElement("a");
+    elm.href = url;
+    elm.download = allPatchesFileName;
+    elm.dispatchEvent(new MouseEvent("click"));
+  });
 }
 
 function onPatchClick(obj, e) {
@@ -74,6 +101,7 @@ const patchHtml = `
 <tr data-id="{id}">
   <td class="title" title="Open patch">{title}</td>
   <td>{lastChanged}</td>
+  <td>{lastOpened}</td>
   <td>
     <button class="duplicatePatch" title="Duplicate patch">
       <svg><use href="#icon-copy"></use></svg>
