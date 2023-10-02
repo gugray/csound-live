@@ -36,6 +36,8 @@ const elmBtnDuplicate = document.getElementById("btnDuplicate");
 const elmBtnLibrary = document.getElementById("btnLibrary");
 const elmEditorHost = document.getElementById("editorHost");
 const elmModal = document.querySelector(".modal");
+const socketUrl = "ws://localhost:9300/synth";
+const logComms = true; // Log socket events
 const dispatcher = new Dispatcher();
 const storage = new Storage();
 let patchExists = false;
@@ -43,6 +45,7 @@ let modal = null;
 let titlePanel, editor;
 let editorBlockChange = false;
 let csound;
+let lastNoteIx = -1;
 
 const patch = {
   id: null,
@@ -57,6 +60,8 @@ async function init() {
 
   console.log = onLog;
   elmVersion.innerText = verstr;
+
+  initSocket();
 
   // Start with new default patch, or load most recent patch
   const lastPatchId = storage.getLastPatchId();
@@ -330,4 +335,30 @@ function onBeforeUnload(e) {
     e.preventDefault();
     e.returnValue = "Unsaved changes";
   }
+}
+
+function initSocket() {
+
+  let interval;
+  let socket = new WebSocket(socketUrl);
+  socket.addEventListener("open", () => {
+    if (logComms) console.log("Socket open");
+    interval = setInterval(async function () {
+      if (!csound) return;
+      const currentNoteIx = await csound.getControlChannel("noteIx");
+      if (currentNoteIx == lastNoteIx) return;
+      lastNoteIx = currentNoteIx;
+      socket.send(`CLOCK ${currentNoteIx}`);
+    }, 10);
+  });
+  socket.addEventListener("message", (event) => {
+    const msg = event.data;
+    if (logComms) console.log(`Message: ${msg}`);
+  });
+  socket.addEventListener("close", () => {
+    if (logComms) console.log("Socket closed");
+    clearInterval(interval);
+    interval = null;
+    socket = null;
+  });
 }

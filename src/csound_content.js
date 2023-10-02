@@ -1,7 +1,7 @@
 export const csdTemplate = `
 <CsoundSynthesizer>
 <CsOptions>
--odac -m0
+-odac -m0 -Ma
 </CsOptions>
 <CsInstruments>
 {{orc-defines}}
