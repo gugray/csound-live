@@ -379,6 +379,7 @@ function handleMessage(msg) {
     if (m[2] == "RATIO") instr = "setRatio";
     else if (m[2] == "INDEX") instr = "setIndex";
     else return;
+    if (!csound) return;
     const noteId = Number.parseInt(m[1]);
     const val = Number.parseFloat(m[3]);
     const scoreEvent = `i "${instr}" 0 0.01 ${noteId} ${val}`;
