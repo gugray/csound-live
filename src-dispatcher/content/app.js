@@ -1,7 +1,7 @@
 const logComms = true;
 const evts = ["mousedown", "mousemove", "mouseup"];
 const elmNotes = [];
-const maxIndex = 10, maxRatio = 8;
+const maxIndex = 20, maxRatio = 8;
 let elmMainJoin, elmMainPlay;
 let elmJoinNote, elmBtnJoin, elmBtnLeave;
 let elmLeftSliderHost, elmLeftSlider, elmLeftVal;
@@ -111,21 +111,31 @@ function doLeave() {
   updateMain();
 }
 
-function valToSliderY(val, maxVal) {
+function ratioToSliderY() {
   let normPos = 0; // 1 at top, 0 middle, -1 at bottom
-  if (val >= 1) normPos = (val - 1) / (maxVal - 1);
-  else normPos = val - 1;
+  if (ratioVal >= 1) normPos = (ratioVal - 1) / (maxRatio - 1);
+  else normPos = ratioVal - 1;
   const h = elmLeftSliderHost.clientHeight;
   return h * 0.5 * (1 - normPos);
 }
 
-function sliderYToVal(y, slideHeight, maxVal) {
+function sliderYToRatio(y, slideHeight) {
   // 1 at top, 0 middle, -1 at bottom
   const normPos = (slideHeight / 2 - y) / (slideHeight / 2);
   let val;
-  if (normPos >= 0) val = 1 + (maxVal - 1) * normPos;
+  if (normPos >= 0) val = 1 + (maxRatio - 1) * normPos;
   else val = 1 + normPos;
   return val;
+}
+
+function indexToSliderY() {
+  let normPos = (indexVal - 1) / (maxIndex - 1);
+  return elmLeftSliderHost.clientHeight * (1 - normPos);
+}
+
+function sliderYToIndex(y, slideHeight) {
+  const normPos = 1 - y / slideHeight;
+  return 1 + normPos * (maxIndex - 1);
 }
 
 function updateControlLabels() {
@@ -141,8 +151,8 @@ function updateControlLabels() {
 }
 
 function updateControlsUI() {
-  elmLeftSlider.style.top = valToSliderY(indexVal, maxIndex) + "px";
-  elmRightSlider.style.top = valToSliderY(ratioVal, maxRatio) + "px";
+  elmLeftSlider.style.top = indexToSliderY() + "px";
+  elmRightSlider.style.top = ratioToSliderY() + "px";
   updateControlLabels();
 }
 
@@ -183,10 +193,12 @@ function initPlayControls() {
     const currY = getCurrY(e);
     dragElm.style.top = currY + "px";
 
-    const maxVal = dragElm == elmLeftSlider ? maxIndex : maxRatio;
-    const newVal = sliderYToVal(currY, dragElm.parentElement.clientHeight, maxVal);
-    if (dragElm == elmLeftSlider) indexVal = newVal;
-    else ratioVal = newVal;
+    // Index
+    if (dragElm == elmLeftSlider)
+      indexVal = sliderYToIndex(currY, dragElm.parentElement.clientHeight);
+    // Ratio
+    else
+      ratioVal = sliderYToRatio(currY, dragElm.parentElement.clientHeight);
     updateControlLabels();
   });
 
