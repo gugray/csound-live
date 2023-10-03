@@ -354,6 +354,7 @@ function initSocket() {
   socket.addEventListener("message", (event) => {
     const msg = event.data;
     if (logComms) console.log(`Message: ${msg}`);
+    handleMessage(msg);
   });
   socket.addEventListener("close", () => {
     if (logComms) console.log("Socket closed");
@@ -361,4 +362,24 @@ function initSocket() {
     interval = null;
     socket = null;
   });
+}
+
+const reSetVal = new RegExp("^NOTE (\\d+) +(RATIO|INDEX)(.+)$");
+
+function handleMessage(msg) {
+  let m;
+  // NOTE N RATIO N
+  // NOTE N INDEX N
+  m = reSetVal.exec(msg);
+  if (m) {
+    let instr;
+    if (m[2] == "RATIO") instr = "setRatio";
+    else if (m[2] == "INDEX") instr = "setIndex";
+    else return;
+    const noteId = Number.parseInt(m[1]);
+    const val = Number.parseFloat(m[3]);
+    const scoreEvent = `i "${instr}" 0 0.01 ${noteId} ${val}`;
+    void csound.inputMessage(scoreEvent);
+    return;
+  }
 }
