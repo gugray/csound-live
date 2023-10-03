@@ -10,7 +10,7 @@ import { TitlePanel } from "./title_panel.js";
 import { SavedPatchesModal } from "./saved_patches_modal.js";
 import { Dispatcher, Events } from "./dispatcher.js";
 import { Storage } from "./storage.js";
-import { getDateStr } from "./utils.js";
+import {getDateStr, removeMultipleDashes, triggerDownload} from "./utils.js";
 
 // OK navigate-away warning if dirty
 // OK saved patches list
@@ -38,8 +38,8 @@ const elmEditorHost = document.getElementById("editorHost");
 const elmModal = document.querySelector(".modal");
 const dispatcher = new Dispatcher();
 const storage = new Storage();
+const modal = new SavedPatchesModal(elmModal, dispatcher, storage);
 let patchExists = false;
-let modal = null;
 let titlePanel, editor;
 let editorBlockChange = false;
 let csound;
@@ -86,14 +86,11 @@ async function init() {
   elmBtnSave.disabled = patchExists;
   elmBtnDuplicate.addEventListener("click", () => duplicatePatch(patch.id));
   elmBtnDownload.addEventListener("click", () => downloadPatch());
-  elmBtnLibrary.addEventListener("click", () => {
-    modal = new SavedPatchesModal(elmModal, dispatcher, storage);
-  });
+  elmBtnLibrary.addEventListener("click", () => modal.show());
   elmEditorHost.addEventListener("click", () => editor.focus());
 
   dispatcher.subscribe(Events.focus_patch, () => editor.focus());
   dispatcher.subscribe(Events.change_title, title => changeTitle(title));
-  dispatcher.subscribe(Events.modal_closed, () => modal = null);
   dispatcher.subscribe(Events.duplicate_patch, id => duplicatePatch(id));
   dispatcher.subscribe(Events.open_patch, id => loadPatch(id) );
   dispatcher.subscribe(Events.delete_patch, id => deletePatch(id));
@@ -149,7 +146,6 @@ function deletePatch(id) {
     return;
   }
   storage.deletePatch(id);
-  if (!modal) return;
   modal.updatePatchList();
 }
 
@@ -166,7 +162,7 @@ function duplicatePatch(id) {
   patch.content = getPatchContent();
   const newId = storage.duplicatePatch(id);
   // If "saved patches" modal is open and current patch is dirty: just refresh list
-  if (modal && titlePanel.isDirty()) {
+  if (modal.isOpen() && titlePanel.isDirty()) {
     modal.updatePatchList();
     return;
   }
@@ -184,7 +180,7 @@ async function loadPatch(id) {
   patch.title = p.title;
   titlePanel.setTitle(p.title);
   showCurrentContent();
-  if (modal) modal.close();
+  if (modal.isOpen()) modal.close();
   editor.focus();
   elmBtnSave.disabled = true;
   elmBtnDuplicate.disabled = false;
@@ -201,17 +197,8 @@ function downloadPatch() {
   const dateStr = getDateStr(d);
   let titleDashes = patch.title.replaceAll(" ", "-");
   let fname = `${dateStr}-${titleDashes}.orc`;
-  let file;
-  let data = [];
-  data.push(getPatchContent());
-  let properties = {type: 'text/plain'};
-  try { file = new File(data, fname, properties); }
-  catch { file = new Blob(data, properties); }
-  let url = URL.createObjectURL(file);
-  const elm = document.createElement("a");
-  elm.href = url;
-  elm.download = fname;
-  elm.dispatchEvent(new MouseEvent("click"));
+  fname = removeMultipleDashes(fname);
+  triggerDownload(patch.content, "text/plain", fname);
 }
 
 function getFullCode(userCode) {
@@ -251,7 +238,7 @@ async function loadAsset(fileURL, fileName) {
   const response = await fetch(fileURL);
   const abuf = await response.arrayBuffer();
   await csound.fs.writeFile(fileName, new Uint8Array(abuf));
-};
+}
 
 async function startCsound() {
 

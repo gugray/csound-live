@@ -154,7 +154,7 @@ footer {
     }
   }
 }
-
+.hiddendownloadlink { visibility: hidden; }
 
 .editor {
   position: fixed; top: 96px; right: 32px; left: 32px; bottom: 32px;
