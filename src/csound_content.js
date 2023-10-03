@@ -29,7 +29,6 @@ endin
 
 
 export const initialUserCode = `gisine ftgen 1, 0, 1024, 10, 1
-;giSample ftgen 2, 0, 0, 1, "kick1.aiff", 0, 4, 1
 
 gkTempo init 60
 
