@@ -67,7 +67,9 @@ footer {
   & button.small {
     margin: 8px 3px 0 0; padding: 3px; width: 32px; height: 32px;
   }
-  & button#btnLibrary { width: 40px; height: 40px; margin: 4px 8px; }
+  & .group button { float:left; }
+  & button#btnLibrary { width: 40px; height: 40px; margin: 4px 8px 4px 0; }
+  & button#btnFullScreen { width: 32px; height: 32px; margin: 8px 8px 0 0; }
   & #expander { flex-grow: 1; }
   & #pnlTitle {
     flex-grow: 1; max-width: 800px; margin-left: 4px;

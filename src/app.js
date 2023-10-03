@@ -33,6 +33,7 @@ const elmBtnPlayPause = document.getElementById("btnPlayPause");
 const elmBtnSave = document.getElementById("btnSave");
 const elmBtnDownload = document.getElementById("btnDownload");
 const elmBtnDuplicate = document.getElementById("btnDuplicate");
+const elmBtnFullscreen = document.getElementById("btnFullScreen");
 const elmBtnLibrary = document.getElementById("btnLibrary");
 const elmEditorHost = document.getElementById("editorHost");
 const elmModal = document.querySelector(".modal");
@@ -92,6 +93,7 @@ async function init() {
   elmBtnDuplicate.addEventListener("click", () => duplicatePatch(patch.id));
   elmBtnDownload.addEventListener("click", () => downloadPatch());
   elmBtnLibrary.addEventListener("click", () => modal.show());
+  elmBtnFullscreen.addEventListener("click", () => document.documentElement.requestFullscreen());
   elmEditorHost.addEventListener("click", () => editor.focus());
 
   dispatcher.subscribe(Events.focus_patch, () => editor.focus());
@@ -302,7 +304,7 @@ async function onKeyDown(e) {
   let handled = false;
   if (e.key == "Escape") {
     handled = true;
-    if (modal) modal.close();
+    if (modal.isOpen()) modal.close();
     else if (csound) await stopCsound();
     else handled = false;
   }
