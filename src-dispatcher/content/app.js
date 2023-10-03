@@ -15,7 +15,7 @@ init();
 
 function init() {
 
-  socketUrl = window.location.protocol == "https" ? "wss://" : "ws://";
+  socketUrl = window.location.protocol.startsWith("https") ? "wss://" : "ws://";
   socketUrl += document.location.host + "/player";
 
   if ("ontouchstart" in window)  {
