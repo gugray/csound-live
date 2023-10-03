@@ -140,7 +140,7 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 // Serve static files from the "/public" subfolder for all other paths
-app.use(express.static("public"));
+app.use(express.static("content"));
 
 // Start the server
 server.listen(port, () => {

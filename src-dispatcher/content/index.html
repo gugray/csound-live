@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale: 1.0, user-scalable=no">
+  <title>co ~ sound</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">  <link rel="stylesheet" href="./app.css?ver=1">
+  <script defer src="./app.js?ver=1" type="module"></script>
+</head>
+<body>
+<header>
+  co ~ sound
+</header>
+
+<section class="notes">
+  <div class="note0">&nbsp;</div>
+  <div class="note1">&nbsp;</div>
+  <div class="note2">&nbsp;</div>
+  <div class="note3">&nbsp;</div>
+  <div class="note4">&nbsp;</div>
+  <div class="note5">&nbsp;</div>
+  <div class="note6">&nbsp;</div>
+  <div class="note7">&nbsp;</div>
+</section>
+
+<main class="join active">
+  <button id="btnJoin" disabled>Join</button>
+  <p class="info hidden">Waiting for a slot<br>in the sequencer...</p>
+</main>
+
+<main class="play">
+  <section class="controls">
+    <div class="left">
+      <div class="control-label">
+        <b>index</b><br/><span id="valLeft">12.3</span>
+      </div>
+      <div class="slider">
+        <span id="slLeft"></span>
+      </div>
+    </div>
+    <div class="right">
+      <div class="control-label">
+        <b>ratio</b><br/><span id="valRight">12.3</span>
+      </div>
+      <div class="slider">
+        <span id="slRight"></span>
+      </div>
+    </div>
+  </section>
+  <section class="bottom">
+    <button id="btnLeave">Leave</button>
+  </section>
+</main>
+
+</body>
+</html>

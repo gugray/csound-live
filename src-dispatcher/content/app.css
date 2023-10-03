@@ -1,0 +1,87 @@
+/* Defines */
+:root {
+  --fntSans: "IBM Plex Sans", sans-serif;
+  --fntSizeBase: 16px;
+  --clrText: #ccc;
+  --clrTextFaint: #888;
+  --clrTextFainter: #444;
+  --clrTextTerminal: #8d8b76;
+  --clrTextError: #b63939;
+  --clrBodyBg: 0,0,0;
+  --clrPanelBg: #202020;
+  --clrControl: #f1d5b9;
+  --clrMyFrame: #ce9b64;
+  --clrMyBeat: #8d785e;
+}
+
+/* Global overrides */
+* { box-sizing: border-box; touch-action: manipulation; }
+
+a { color: #8bb3e0; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button {
+  display: inline-block; border: none; margin: 0; padding: 4px 12px;
+  background-color: var(--clrControl); font-size: 18px;
+  border: none; color: var(--clrTextFainter);
+}
+button[disabled] { background: var(--clrText); }
+
+.hidden { display: none; }
+
+/* Layout, specifics */
+html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; }
+body {
+  display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
+  font-family: var(--fntSans); font-size: var(--fntSizeBase);
+  background-color: rgb(var(--clrBodyBg)); color: var(--clrText);
+  -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+}
+header {
+  background: var(--clrPanelBg); padding: 8px 16px;
+  font-size: 20px; font-weight: bold;
+}
+main { flex-grow: 1; padding: 8px 16px; }
+
+main.join { text-align: center; padding-top: 100px; display: none; }
+main.join.active { display: block; }
+main.join button { font-size: 24px; padding: 8px 24px; }
+p.info { font-style: italic; }
+
+main.play {
+  display: none; flex-direction: column; justify-content: space-between; align-items: stretch;
+}
+main.play.active { display: flex; }
+section.notes {
+  display: flex; justify-content: space-evenly; align-items: center; padding: 16px 0;
+}
+section.notes div {
+  width: 18px; height: 18px; border: 2px solid var(--clrTextFaint);
+  border-radius: 100px; transition: background-color ease-in 0.15s;
+}
+section.notes div.on { background-color: var(--clrTextFainter); transition: background-color ease-in 0.05s; }
+section.notes div.me { border-color: var(--clrMyFrame); }
+section.notes div.me.on { background-color: var(--clrMyBeat); }
+section.bottom { text-align: center; }
+section.bottom button { font-size: 16px; padding: 4px 32px; }
+section.controls {
+  flex-grow: 1;
+  display: flex; justify-content: stretch; justify-content: space-evenly;
+}
+
+section.controls>div {
+  width: 50%; padding-bottom: 32px;
+  display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
+}
+div.left { text-align: right; padding-right: 12px; }
+div.right { padding-left: 12px; }
+.control-label { margin-bottom: 32px; }
+.slider { flex-grow: 1; position: relative; }
+div.left .slider { border-right: 2px solid var(--clrMyFrame); margin-right: 12px; }
+div.right .slider { border-left: 2px solid var(--clrMyFrame); margin-left: 12px; }
+.slider span {
+  display: block; width: 64px; height: 12px; background-color: var(--clrMyFrame);
+  position: absolute; top: 20%; margin-top: -6px;
+}
+div.left .slider span { right: 0; margin-right: -16px; }
+div.right .slider span { left: 0; margin-left: -16px; }
