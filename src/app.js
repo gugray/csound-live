@@ -36,10 +36,10 @@ const elmBtnDuplicate = document.getElementById("btnDuplicate");
 const elmBtnLibrary = document.getElementById("btnLibrary");
 const elmEditorHost = document.getElementById("editorHost");
 const elmModal = document.querySelector(".modal");
-const socketUrl = "ws://localhost:9300/synth";
 const logComms = true; // Log socket events
 const dispatcher = new Dispatcher();
 const storage = new Storage();
+let socketUrl;
 let patchExists = false;
 let modal = null;
 let titlePanel, editor;
@@ -338,6 +338,11 @@ function onBeforeUnload(e) {
 }
 
 function initSocket() {
+
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+    socketUrl = "ws://localhost:9300/synth";
+  else
+    socketUrl = "wss://cosound.jealousmarkup.xyz/synth";
 
   let interval;
   let socket = new WebSocket(socketUrl);
