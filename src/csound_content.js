@@ -28,7 +28,7 @@ endin
 `;
 
 
-export const initialUserCode = `gisine ftgen 1, 0, 1024, 10, 1
+export const initialUserCode = `gisine ftgen 1, 0, 4096, 10, 1
 
 gkTempo init 60
 
