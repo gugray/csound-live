@@ -1,6 +1,6 @@
 import { Dispatcher, Events } from "./dispatcher.js";
 import { Storage } from "./storage.js";
-import { enc, fmtTime } from "./utils.js";
+import { enc, fmtTime, triggerDownload } from "./utils.js";
 
 const allPatchesFileName = "patches.zip";
 
@@ -20,6 +20,15 @@ export class SavedPatchesModal {
   close() {
     this.elmHost.classList.remove("visible");
     this.dispatcher.dispatch(Events.modal_closed);
+  }
+
+  show() {
+    this.elmHost.classList.add("visible");
+    this.updatePatchList();
+  }
+
+  isOpen() {
+    return this.elmHost.classList.contains("visible");
   }
 
   updatePatchList() {
@@ -45,31 +54,20 @@ export class SavedPatchesModal {
 }
 
 function init(obj) {
-  obj.elmHost.classList.add("visible");
   obj.elmHost.addEventListener("click", e => {
     if (e.target == obj.elmHost) obj.close();
   });
   obj.elmClose.addEventListener("click", () => obj.close());
-  obj.elmDownloadAll.addEventListener("click", () => downloadAll(obj));
+  obj.elmDownloadAll.addEventListener("click", e => {
+    e.preventDefault();
+    downloadAll(obj);
+  });
 }
 
 function downloadAll(obj) {
 
   obj.storage.getAllPatchesZip(zip => {
-    let file;
-    let data = [];
-    data.push(zip);
-    let properties = {type: 'application/zip'};
-    try {
-      file = new File(data, allPatchesFileName, properties);
-    } catch {
-      file = new Blob(data, properties);
-    }
-    let url = URL.createObjectURL(file);
-    const elm = document.createElement("a");
-    elm.href = url;
-    elm.download = allPatchesFileName;
-    elm.dispatchEvent(new MouseEvent("click"));
+    triggerDownload(zip, "application/zip", allPatchesFileName);
   });
 }
 

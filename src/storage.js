@@ -1,5 +1,5 @@
 import JSZip from "jszip";
-import { getDateStr } from "./utils.js";
+import { getDateStr, removeMultipleDashes } from "./utils.js";
 
 const defaultTitle = "New Csound patch";
 const patchesKey = "patches";
@@ -104,7 +104,7 @@ export class Storage {
     let zip = new JSZip();
     for (const p of patchList) {
       const dateStr = getDateStr(new Date(p.lastChanged));
-      const titleDashes = p.title.replaceAll(" ", "-");
+      const titleDashes = removeMultipleDashes(p.title.replaceAll(" ", "-"));
       const name = `${dateStr}-${titleDashes}.orc`;
       const content = localStorage.getItem(`${contentKey}-${p.id}`);
       zip.file(name, content);
