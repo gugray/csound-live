@@ -130,6 +130,8 @@ function createEditor() {
   const customKeymap = keymap.of([
     { key: "Cmd-Enter", run: evalChange, },
     { key: "Ctrl-Enter", run: evalChange, },
+    { key: "Cmd-d", run: toggleQRCode, },
+    { key: "Ctrl-d", run: toggleQRCode, },
   ]);
 
   return new EditorView({
@@ -314,6 +316,13 @@ async function onKeyDown(e) {
     e.preventDefault();
     e.stopPropagation();
   }
+}
+
+function toggleQRCode() {
+  const elm = document.getElementById("qr-overlay");
+  if (elm.classList.contains("visible")) elm.classList.remove("visible");
+  else elm.classList.add("visible");
+  return true;
 }
 
 function onBeforeUnload(e) {
