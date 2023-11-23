@@ -1,2 +1,2 @@
-FROM alpine:latest
+FROM busybox:latest
 COPY ./public /public
