@@ -2,9 +2,9 @@ name: Build and deploy
 
 on:
   push:
-    # branches: [ beat-dispatch ]
-    # tags:
-    #  - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    # branches: [ main ]
+    tags:
+     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
   build:
