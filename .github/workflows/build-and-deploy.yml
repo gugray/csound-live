@@ -2,9 +2,9 @@ name: Build and deploy
 
 on:
   push:
-    # branches: [ main ]
-    tags:
-     - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+    # branches: [ beat-dispatch ]
+    # tags:
+    #  - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
 
 jobs:
   build:
@@ -20,7 +20,6 @@ jobs:
         node-version: 16
 
     - name: Install Node dependencies
-      working-directory: ./
       run: yarn install --frozen-lockfile
 
     - name: Write version from REF to file
@@ -28,26 +27,25 @@ jobs:
       run: 'echo "${{github.ref_name}}" >version.txt'
 
     - name: Build web app
-      working-directory: ./
       run: node build.js
 
-    - name: ZIP output folder
-      working-directory: ./public
-      run: zip -r ../csound-live-public.zip .
-      
-    - name: SCP file
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.SCP_HOST }}
-        username: ${{ secrets.SCP_USER }}
-        key: ${{ secrets.SCP_KEY }}
-        source: "csound-live-public.zip"
-        target: "."
+    - name: Build Docker image
+      run: docker build --platform=linux/amd64 -t csound-live .
 
-    - name: Invoke deployment hook
-      uses: distributhor/workflow-webhook@v1
-      env:
-        webhook_url: ${{ secrets.WEBHOOK_URL }}
-        webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
-        data: '{ "secret": "${{ secrets.WEBHOOK_SECRET }}"  }'
+    - name: Push Docker image to Amazon ECR
+      id: ecr
+      uses: jwalton/gh-ecr-push@v1
+      with:
+        access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        region: eu-central-1
+        local-image: csound-live
+        image: csound-live
+
+    # - name: Invoke deployment hook
+    #   uses: distributhor/workflow-webhook@v1
+    #   env:
+    #     webhook_url: ${{ secrets.WEBHOOK_URL }}
+    #     webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
+    #     data: '{ "secret": "${{ secrets.WEBHOOK_SECRET }}"  }'
        
