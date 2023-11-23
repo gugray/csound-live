@@ -42,10 +42,10 @@ jobs:
         local-image: csound-live
         image: csound-live
 
-    # - name: Invoke deployment hook
-    #   uses: distributhor/workflow-webhook@v1
-    #   env:
-    #     webhook_url: ${{ secrets.WEBHOOK_URL }}
-    #     webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
-    #     data: '{ "secret": "${{ secrets.WEBHOOK_SECRET }}"  }'
+    - name: Invoke deployment hook
+      uses: distributhor/workflow-webhook@v1
+      env:
+        webhook_url: ${{ secrets.WEBHOOK_URL }}
+        webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
+        data: '{ "secret": "${{ secrets.WEBHOOK_SECRET }}"  }'
        
